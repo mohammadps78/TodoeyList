@@ -9,7 +9,7 @@
 import UIKit
 import RealmSwift
 
-class CategoryViewController: UITableViewController {
+class CategoryViewController: SwipeTableViewController {
     
     let realm = try! Realm()
     
@@ -21,17 +21,20 @@ class CategoryViewController: UITableViewController {
         super.viewDidLoad()
         
         loadCategories()
+        
+        tableView.rowHeight = 80.0
 
         
     }
     //MARK: -  TableView Datasource Methods
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "CategoryCell", for: indexPath)
-        
+        let cell = super.tableView(tableView, cellForRowAt: indexPath)
+
         cell.textLabel?.text = categories?[indexPath.row].name ?? "No Categories Added Yet"
-        
+
         return cell
     }
+    
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return categories?.count ?? 1
@@ -54,7 +57,7 @@ class CategoryViewController: UITableViewController {
     
 
     
-    //MARK: - Data Manipulation Methods
+    
     
     
     //MARK: - Add new Categories
@@ -99,22 +102,39 @@ class CategoryViewController: UITableViewController {
         tableView.reloadData()
     
 }
+    //MARK: - Data Manipulation Methods
+    
+    override func updateModel(at indexPath: IndexPath) {
+        do {
+            if let categoryForDeletion = categories?[indexPath.row] {
+                try realm.write {
+                    realm.delete(categoryForDeletion)
+                }
+            }
+        }
+        catch {
+            print("There was an error deleting the object", error)
+        }
+    }
+    
+    
+
+}
 //MARK: - Search Bar Delegate Methods
-//extension CategoryViewController: UISearchBarDelegate {
-//    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
-//        let request: NSFetchRequest<Category> = Category.fetchRequest()
-//
-//        request.predicate = NSPredicate(format: "name CONTAINS[cd] %@", searchBar.text!)
-//
-//        request.sortDescriptors = [NSSortDescriptor(key: "name", ascending: true)]
-//
-//        loadCategories(with: request)
-//
-//    }
-//    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
-//        if searchBar.text?.count == 0 {
-//            loadCategories()
-//        }
-//    }
-//
+
+extension CategoryViewController: UISearchBarDelegate {
+    
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+        categories = categories?.filter("title CONTAINS %@", searchBar.text!).sorted(byKeyPath: "dateCreated", ascending: true)
+        tableView.reloadData()
+    }
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        if searchBar.text?.count == 0 {
+            loadCategories()
+            
+            DispatchQueue.main.async {
+                searchBar.resignFirstResponder()
+            }
+        }
+    }
 }

@@ -9,7 +9,7 @@
 import UIKit
 import RealmSwift
 
-class TodoeyViewController: UITableViewController {
+class TodoeyViewController: SwipeTableViewController {
     
     var todoItems : Results<Item>?
     let realm = try! Realm()
@@ -17,6 +17,8 @@ class TodoeyViewController: UITableViewController {
     var selectedCategory : Category? {
         didSet{
             loadItems()
+            
+            tableView.rowHeight = 80.0
         }
     }
     override func viewDidLoad() {
@@ -26,7 +28,7 @@ class TodoeyViewController: UITableViewController {
     
     //MARK - Tableview Datasource Methods
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "ToDoItemCell", for: indexPath)
+        let cell = super.tableView(tableView, cellForRowAt: indexPath)
         
         if let items = todoItems?[indexPath.row] {
             cell.textLabel?.text = items.title
@@ -102,6 +104,19 @@ class TodoeyViewController: UITableViewController {
     
     func loadItems() {
         todoItems = selectedCategory?.items.sorted(byKeyPath: "title", ascending: true)
+    }
+    //Mark: - Data deletion methods
+    override func updateModel(at indexPath: IndexPath) {
+        do {
+            if let itemForDeletion = todoItems?[indexPath.row] {
+                try realm.write {
+                    realm.delete(itemForDeletion)
+                }
+            }
+        }
+        catch {
+            print("There was an error deleting the object\(error)")
+        }
     }
 }
 
